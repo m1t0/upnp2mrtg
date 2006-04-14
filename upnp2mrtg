@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/bash
 # 
 #  upnp2mrtg - Monitoring AVM Fritz!Box 5050 and 7050 With MRTG
 #
@@ -22,20 +22,45 @@
 # 
 #  http://www.ANetzB.de/upnp2mrtg/
 #
-#  RELEASE: 20060414
+#  $Id: upnp2mrtg,v 1.5 2006/04/14 23:38:25 tomcat Exp $
 
-# configuration
-# HOST="fritz.box"
-HOST="192.168.178.1"
+# default configuration
+HOST="fritz.box"
 PORT="49000"
 NETCAT="netcat"
 
-# 
+# if available, read configuration 
 test -f /etc/upnp2mrtg.cfg && . /etc/upnp2mrtg.cfg
+
 case $NETCAT in
     bash) nc="shell_netcat" ;;
     *) nc="netcat -q 1" ;;
 esac
+
+ver_txt="upnp2mrtg, version $Revision: 1.5 $
+Copyright (C) 2005 Michael Tomschitz
+upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
+and you are welcome to redistribute it under certain conditions."
+
+help_txt="Usage: upnp2mrtg [-a <host>] [-p <port>] [-d] [-h] [-v]
+
+  -a <host> hostname or ip adress of upnp device
+  -p <port> port to connect
+  -d        debug mode
+  -h        show help and exit
+  -v        show upnp2mrtg version and exit
+"
+
+while getopts "a:dhp:v" option; do
+  case $option in
+    a) HOST="$OPTARG";;
+    d) set -x ;;
+    h) echo "$help_txt"; exit 0;;
+    p) PORT="$OPTARG";;
+    v) echo "$ver_txt"; exit 0;;
+    ?) exit 1;;
+  esac
+done
 
 # functions
 request_header () {
