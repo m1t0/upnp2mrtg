@@ -1,64 +1,73 @@
 #!/usr/local/bin/bash
-
 # http://www.ANetzB.de/upnp2mrtg/
 
 # configuration
-HOST="10.21.21.254"
+HOST="192.168.178.1"
 PORT="49000"
-exec 5<>/dev/tcp/$HOST/$PORT
-nc="shnc"
-nc="nc -q 1"
+NETCAT="nc"
+
+# 
+test -f /etc/upnp2mrtg.cfg && . /etc/upnp2mrtg.cfg
+case $NETCAT in
+    bash) nc="shnc" ;;
+    *) nc="nc -q 1" ;;
+esac
 
 # functions
-soap_fac () {
-    echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">
+rh () {
+echo "POST /upnp/control/$4 HTTP/1.0
+HOST: $1:$2
+CONTENT-LENGTH: $3
+CONTENT-TYPE: text/xml; charset=\"utf-8\"
+SOAPACTION: \"urn:schemas-upnp-org:service:$5:1#$6\""
+}
+sf () {
+  echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<s:Envelope
+	xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\"
+	s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">
     <s:Body>
         <u:$1 xmlns:u=\"urn:schemas-upnp-org:service:$2:1\" />
      </s:Body>
 </s:Envelope>"
 }
-get_attr () {
-    echo "$1" | grep "<$2>" | sed -e "s/^.*<$2>//" -e "s/<\/$2>//"
+ga () {
+  echo "$1" | grep "<$2>" | sed -e "s/^.*<$2>//" -e "s/<\/$2>//"
 }
-
+mt () {
+  echo "$((${1} / ${2})) $((${1} % ${2}))"
+}
 shnc () {
-echo -e "$@" >&5
-cat <&5
+  exec 5<>/dev/tcp/$1/$2; cat >&5; cat <&5;
 }
 
 # get uptime
-request="`soap_fac GetStatusInfo WANIPConnection`"
-content_length=`echo "$request" | wc -c`
-response="`echo \"POST /upnp/control/WANIPConn1 HTTP/1.1
-HOST: $HOST:$PORT
-CONTENT-LENGTH: ${#request}
-CONTENT-TYPE: text/xml; charset=\"utf-8\"
-SOAPACTION: \"urn:schemas-upnp-org:service:WANIPConnection:1#GetStatusInfo\"
+rq="`sf GetStatusInfo WANIPConnection`"
+po="`rh $HOST $PORT ${#rq} WANIPConn1 WANIPConnection GetStatusInfo`
 
-$request\" | $nc $HOST $PORT`"
-uptime_sec=`get_attr "$response" NewUptime`
-modulotime () { echo `expr $1 / $2` `expr $1 % $2`; }
-s=`modulotime $uptime_sec 60`
-m=`modulotime ${s% *} 60`
-h=`modulotime ${m% *} 24`
+$rq"
+rs="`echo "$po" | $nc $HOST $PORT 2>/dev/null`"
+if [ $? -eq 0 ]; then
+  ut=`ga "$rs" NewUptime`
 
-uptime=`printf "%d days %.2d:%.2d:%.2d h (online)\n" ${h% *} ${h#* } ${m#* } ${s#* }`
-
+  # calculate days + hours, minutes, seconds
+  s=`mt $ut 60`
+  m=`mt ${s% *} 60`
+  h=`mt ${m% *} 24`
+fi
 
 # get bytes in/out
-request="`soap_fac GetAddonInfos WANCommonInterfaceConfig`"
-content_length=`echo "$request" | wc -c`
-response="`echo \"POST /upnp/control/WANCommonIFC1 HTTP/1.1
-CONTENT-TYPE: text/xml; charset=\"utf-8\"
-HOST: $HOST:$PORT
-CONTENT-LENGTH: ${#request}
-SOAPACTION: \"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1#GetAddonInfos\"
+rq="`sf GetAddonInfos WANCommonInterfaceConfig`"
+po="`rh $HOST $PORT ${#rq} WANCommonIFC1 WANCommonInterfaceConfig GetAddonInfos`
 
-$request\" | $nc $HOST $PORT`"
-bytes1=`get_attr "$response" NewTotalBytesReceived`
-bytes2=`get_attr "$response" NewTotalBytesSent`
+$rq"
+rs="`echo "$po" | $nc $HOST $PORT 2>/dev/null`"
+
+if [ $? -eq 0 ]; then
+  b1=`ga "$rs" NewTotalBytesReceived`
+  b2=`ga "$rs" NewTotalBytesSent`
+fi
 
 # output for mrtg
-echo -e "$bytes1\n$bytes2\n$uptime\nFritz!Box"
-
+printf "%s\n%s\n%d days %.2d:%.2d:%.2d h (online)\nFritz!Box\n" \
+  "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
