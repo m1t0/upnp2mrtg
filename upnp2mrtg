@@ -1,6 +1,6 @@
 #!/bin/bash
 # 
-#  upnp2mrtg - Monitoring AVM Fritz!Box 5050 and 7050 With MRTG
+#  upnp2mrtg - Monitoring AVM Fritz!Box 5050, 7050 and 7170 With MRTG
 #
 #  Copyright (C) 2005 Michael Tomschitz <michael.tomschitz@ANetzB.de>
 #
@@ -22,7 +22,7 @@
 # 
 #  http://www.ANetzB.de/upnp2mrtg/
 #
-#  $Id: upnp2mrtg,v 1.5 2006/04/14 23:38:25 tomcat Exp $
+#  $Id: upnp2mrtg,v 1.6 2006/10/14 19:30:20 tomcat Exp $
 
 # default configuration
 HOST="fritz.box"
@@ -34,10 +34,12 @@ test -f /etc/upnp2mrtg.cfg && . /etc/upnp2mrtg.cfg
 
 case $NETCAT in
     bash) nc="shell_netcat" ;;
-    *) nc="netcat -q 1" ;;
+    netcat) nc="netcat" ;;
+    nc_q) nc="nc -q 1" ;;
+    *) nc="nc" ;;
 esac
 
-ver_txt="upnp2mrtg, version $Revision: 1.5 $
+ver_txt="upnp2mrtg, version $Revision: 1.6 $
 Copyright (C) 2005 Michael Tomschitz
 upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
 and you are welcome to redistribute it under certain conditions."
