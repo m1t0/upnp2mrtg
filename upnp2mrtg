@@ -22,7 +22,7 @@
 # 
 #  http://www.ANetzB.de/upnp2mrtg/
 #
-#  $Id: upnp2mrtg,v 1.7 2006/11/29 21:00:46 tomcat Exp $
+#  $Id: upnp2mrtg,v 1.8 2006/11/29 21:24:58 tomcat Exp $
 
 # default configuration
 HOST="fritz.box"
@@ -39,12 +39,12 @@ case $NETCAT in
     *) nc="nc" ;;
 esac
 
-ver_txt="upnp2mrtg, version $Revision: 1.7 $
+ver_txt="upnp2mrtg, version $Revision: 1.8 $
 Copyright (C) 2005-2006 Michael Tomschitz
 upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
 and you are welcome to redistribute it under certain conditions."
 
-help_txt="Usage: upnp2mrtg [-a <host>] [-p <port>] [-d] [-h] [-i] [-v] [-V]
+help_txt="Usage: upnp2mrtg [-a <host>] [-p <port>] [-d] [-h] [-i] [-t] [-v] [-V]
 
   -a <host> hostname or ip adress of upnp device
   -p <port> port to connect
