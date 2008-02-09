@@ -1,6 +1,7 @@
 #!/bin/bash
 # 
-#  upnp2mrtg - Monitoring AVM Fritz!Box 5050, 7050 and 7170 With MRTG
+#  upnp2mrtg - Monitoring AVM Fritz!Box With MRTG
+#  This versions have been reported as working: 3030, 5050, 7050, 7141 and 7170
 #
 #  Copyright (C) 2005 Michael Tomschitz <michael.tomschitz@ANetzB.de>
 #
@@ -22,7 +23,7 @@
 # 
 #  http://www.ANetzB.de/upnp2mrtg/
 #
-#  $Id: upnp2mrtg,v 1.8 2006/11/29 21:24:58 tomcat Exp $
+#  $Id: upnp2mrtg,v 1.9 2008/02/09 15:37:57 tomcat Exp $
 
 # default configuration
 HOST="fritz.box"
@@ -39,30 +40,33 @@ case $NETCAT in
     *) nc="nc" ;;
 esac
 
-ver_txt="upnp2mrtg, version $Revision: 1.8 $
-Copyright (C) 2005-2006 Michael Tomschitz
+ver_txt="upnp2mrtg, version $Revision: 1.9 $
+Copyright (C) 2005-2008 Michael Tomschitz
 upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
 and you are welcome to redistribute it under certain conditions."
 
-help_txt="Usage: upnp2mrtg [-a <host>] [-p <port>] [-d] [-h] [-i] [-t] [-v] [-V]
+help_txt="\
+Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-d] [-h] [-i] [-t] [-v] [-V]
 
-  -a <host> hostname or ip adress of upnp device
-  -p <port> port to connect
-  -d        debug mode
-  -h        show help and exit
-  -i <file> get all igd description
-  -t        test connection
-  -v        show upnp2mrtg version and exit
-  -V        be verbose for testing
+  -a <host>    hostname or ip adress of upnp device (default: $HOST)
+  -p <port>    port to connect (default: $PORT)
+  -P           query packets instead of bytes
+  -d           debug mode
+  -h           show help and exit
+  -i <outfile> get all igd description
+  -t           test connection
+  -v           show upnp2mrtg version and exit
+  -V           be verbose for testing
 "
 
-while getopts "a:dhi:p:tvV" option; do
+while getopts "a:dhi:p:PtvV" option; do
   case $option in
     a) HOST="$OPTARG";;
     d) set -x ;;
     h) echo "$help_txt"; exit 0;;
     i) MODE=igd; IGDXML="$OPTARG";;
     p) PORT="$OPTARG";;
+    P) PACKET_MODE=true;;
     t) MODE="test";;
     v) echo "$ver_txt"; exit 0;;
     V) VERBOSE=true;;
@@ -105,7 +109,6 @@ modulo_time () {
 shell_netcat () {
   exec 5<>/dev/tcp/$1/$2; cat >&5; cat <&5;
 }
-
 get_response () {
   _get_response_rs="`echo "$1" | $nc $HOST $PORT 2>/dev/null`"
   _get_response_rv=$?
@@ -125,6 +128,16 @@ echo "GET $3 HTTP/1.0
 
 "
 }
+ws_operation () {
+  request="`soap_form "$1" WANCommonInterfaceConfig`"
+  post="`request_header $HOST $PORT ${#request} WANCommonIFC1 WANCommonInterfaceConfig "$1"`
+
+$request"
+rs="`get_response "$post"`"
+if [ $? -eq 0 ]; then
+  echo "`get_attribute "$2" "$rs"`"
+fi
+}
 
 case $MODE in
   test)
@@ -136,6 +149,9 @@ case $MODE in
       echo "Connection Error"; exit 1
     fi;;
   igd)
+    if [ -f "$IGDXML" ];then
+      echo "ERROR: $IGDXML: File exists.">&2; exit 1
+    fi
     for igd in any igdconnSCPD igddesc igddslSCPD igdicfgSCPD; do
       request="`request_header_http $HOST $PORT /$igd.xml`
 " 
@@ -149,7 +165,6 @@ $rs" >> "$IGDXML"
       fi
     done;;
    *)
-
 # get uptime
 request="`soap_form GetStatusInfo WANIPConnection`"
 post="`request_header $HOST $PORT ${#request} WANIPConn1 WANIPConnection GetStatusInfo`
@@ -166,19 +181,17 @@ if [ $? -eq 0 ]; then
   h=`modulo_time ${m% *} 24`
 fi
 
-# get bytes in/out
-request="`soap_form GetAddonInfos WANCommonInterfaceConfig`"
-post="`request_header $HOST $PORT ${#request} WANCommonIFC1 WANCommonInterfaceConfig GetAddonInfos`
-
-$request"
-rs="`get_response "$post"`"
-# rs="`echo "$post" | $nc $HOST $PORT 2>/dev/null`"
-if [ $? -eq 0 ]; then
-  b1=`get_attribute NewTotalBytesReceived "$rs"`
-  b2=`get_attribute NewTotalBytesSent "$rs"`
+# get data in/out
+if ${PACKET_MODE:-false}; then
+  b1="`ws_operation GetTotalPacketsReceived NewTotalPacketsReceived`"
+  b2="`ws_operation GetTotalPacketsSent NewTotalPacketsSent`"
+else
+  b1="`ws_operation GetAddonInfos NewTotalBytesReceived`"
+  b2="`ws_operation GetAddonInfos NewTotalBytesSent`"
 fi
 
 # output for mrtg
 printf "%s\n%s\n%d days %.2d:%.2d:%.2d h (online)\nFritz!Box\n" \
   "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
+  ;;
 esac
