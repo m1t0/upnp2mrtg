@@ -1,4 +1,6 @@
-# Monitoring Fritz!Box With MRTG
+# Monitoring Fritz!Box with MRTG
+
+http://www.anetzb.de/upnp2mrtg/
 
 ## upnp2mrtg
 upnp2mrtg is a add-on for the
@@ -33,7 +35,7 @@ note! Thanks!
 
 ## Contact
 If you have problems, questions, ideas or suggestions, please contact me:
-(mailto:upnp2mrtg@ANetzB.de)
+(upnp2mrtg@ANetzB.de)
 
 ## Requirements
 - UNIX style Operating System
@@ -46,14 +48,15 @@ If you have problems, questions, ideas or suggestions, please contact me:
 - install netcat
 - check successful operation of upnp2mrtg
 - modify your mrtg.cfg (add mrtg.cfg to your /etc/mrtg.cfg)
-- check if MRTG is configured properly: is mrtg started from cron? check for /etc/cron.d/mrtg or use
+- check if MRTG is configured properly: is mrtg started from cron? check for
+  /etc/cron.d/mrtg or use
 
-        '''0-59/5 * * * *  /usr/bin/mrtg --logging /var/log/mrtg.log'''
+        0-59/5 * * * *  /usr/bin/mrtg --logging /var/log/mrtg.log
 
 ## netcat
 There are different incarnations of netcat. Type
 
-'''nc -h'''
+	nc -h
 
 to check which on you use:
 
@@ -84,12 +87,8 @@ Want to see the result?
 
 ## Download
 
-    upnp2mrtg (2008-02-09)
-    mrtg.cfg (2008-02-09)
-
-## License
-
-    GPL - GNU General Public License
+- https://github.com/m1t0/upnp2mrtg
+- git clone git://git.savannah.nongnu.org/upnp2mrtg.git
 
 ## Links
 
@@ -115,9 +114,9 @@ Want to see the result?
 compile bash with net-redirections enabled
 download http://ftp.gnu.org/gnu/bash/bash-2.05b.tar.gz
 
-'''
-  ./configure --enable-net-redirections --disable-readline
-  make
-  cp bash /usr/local/bin/bash
-  strip /usr/local/bin/bash
-'''  
+
+	./configure --enable-net-redirections --disable-readline
+	make
+	cp bash /usr/local/bin/bash
+	strip /usr/local/bin/bash
+
