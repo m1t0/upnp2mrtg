@@ -182,16 +182,15 @@ if [ $? -eq 0 ]; then
 fi
 
 # get data in/out
-if ${PACKET_MODE:-false}; then
-  b1="`ws_operation GetTotalPacketsReceived NewTotalPacketsReceived`"
-  b2="`ws_operation GetTotalPacketsSent NewTotalPacketsSent`"
-else
-  b1="`ws_operation GetAddonInfos NewTotalBytesReceived`"
-  b2="`ws_operation GetAddonInfos NewTotalBytesSent`"
-fi
+b1="TotalBytesReceived:`ws_operation GetAddonInfos NewTotalBytesReceived`"
+b2="TotalBytesSent:`ws_operation GetAddonInfos NewTotalBytesSent`"
+b3="DownstreamMaxBitRate:`ws_operation GetCommonLinkProperties NewLayer1DownstreamMaxBitRate`"
+b4="UpstreamMaxBitRate:`ws_operation GetCommonLinkProperties NewLayer1UpstreamMaxBitRate`"
+b5="ByteSendRate:`ws_operation GetAddonInfos NewByteSendRate`"
+b6="ByteReceiveRate:`ws_operation GetAddonInfos NewByteReceiveRate`"
 
 # output for mrtg
-printf "%s\n%s\n%d days %.2d:%.2d:%.2d h (online)\nFritz!Box\n" \
-  "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
+printf "%s\n%s\n%s\n%s\n%s\n%s\nUpTime:%.2d Tagen %.2d Stunden %.2d Minuten %.2d Sekunden\n" \
+  "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${b3:-UNKNOWN}" "${b4:-UNKNOWN}" "${b5:-UNKNOWN}" "${b6:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
   ;;
 esac
