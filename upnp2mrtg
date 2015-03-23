@@ -46,11 +46,12 @@ upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
 and you are welcome to redistribute it under certain conditions."
 
 help_txt="\
-Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-d] [-h] [-i] [-t] [-v] [-V]
+Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-R] [-d] [-h] [-i] [-t] [-v] [-V]
 
   -a <host>    hostname or ip adress of upnp device (default: $HOST)
   -p <port>    port to connect (default: $PORT)
   -P           query packets instead of bytes
+  -R           query byterate instead of bytes
   -d           debug mode
   -h           show help and exit
   -i <outfile> get all igd description
@@ -67,6 +68,7 @@ while getopts "a:dhi:p:PtvV" option; do
     i) MODE=igd; IGDXML="$OPTARG";;
     p) PORT="$OPTARG";;
     P) PACKET_MODE=true;;
+    R) RATE_MODE=true;;
     t) MODE="test";;
     v) echo "$ver_txt"; exit 0;;
     V) VERBOSE=true;;
@@ -182,15 +184,19 @@ if [ $? -eq 0 ]; then
 fi
 
 # get data in/out
-b1="TotalBytesReceived:`ws_operation GetAddonInfos NewTotalBytesReceived`"
-b2="TotalBytesSent:`ws_operation GetAddonInfos NewTotalBytesSent`"
-b3="DownstreamMaxBitRate:`ws_operation GetCommonLinkProperties NewLayer1DownstreamMaxBitRate`"
-b4="UpstreamMaxBitRate:`ws_operation GetCommonLinkProperties NewLayer1UpstreamMaxBitRate`"
-b5="ByteSendRate:`ws_operation GetAddonInfos NewByteSendRate`"
-b6="ByteReceiveRate:`ws_operation GetAddonInfos NewByteReceiveRate`"
+if ${RATE_MODE:-false}; then
+  b1="`ws_operation GetCommonLinkProperties NewLayer1DownstreamMaxBitRate`"
+  b2="`ws_operation GetCommonLinkProperties NewLayer1UpstreamMaxBitRate`"
+else if ${PACKET_MODE:-false}; then
+  b1="`ws_operation GetAddonInfos NewByteSendRate`"
+  b2="`ws_operation GetAddonInfos NewByteReceiveRate`"
+else
+  b1="`ws_operation GetAddonInfos NewTotalBytesReceived`"
+  b2="`ws_operation GetAddonInfos NewTotalBytesSent`"
+fi
 
 # output for mrtg
-printf "%s\n%s\n%s\n%s\n%s\n%s\nUpTime:%.2d Tagen %.2d Stunden %.2d Minuten %.2d Sekunden\n" \
-  "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${b3:-UNKNOWN}" "${b4:-UNKNOWN}" "${b5:-UNKNOWN}" "${b6:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
+printf "%s\n%s\n%d days %.2d:%.2d:%.2d h (online)\nFritz!Box\n" \
+  "${b1:-UNKNOWN}" "${b2:-UNKNOWN}" "${h% *}" "${h#* }" "${m#* }" "${s#* }"
   ;;
 esac
