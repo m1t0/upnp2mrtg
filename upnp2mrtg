@@ -46,11 +46,13 @@ upnp2mrtg comes with ABSOLUTELY NO WARRANTY. This is free software,
 and you are welcome to redistribute it under certain conditions."
 
 help_txt="\
-Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-d] [-h] [-i] [-t] [-v] [-V]
+Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-R] [-M] [-d] [-h] [-i] [-t] [-v] [-V]
 
   -a <host>    hostname or ip adress of upnp device (default: $HOST)
   -p <port>    port to connect (default: $PORT)
   -P           query packets instead of bytes
+  -R           query byterate instead of bytes
+  -M           query max byterate instead of bytes
   -d           debug mode
   -h           show help and exit
   -i <outfile> get all igd description
@@ -59,7 +61,7 @@ Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-d] [-h] [-i] [-t] [-v] [-V]
   -V           be verbose for testing
 "
 
-while getopts "a:dhi:p:PtvV" option; do
+while getopts "a:dhi:p:PRMtvV" option; do
   case $option in
     a) HOST="$OPTARG";;
     d) set -x ;;
@@ -67,6 +69,8 @@ while getopts "a:dhi:p:PtvV" option; do
     i) MODE=igd; IGDXML="$OPTARG";;
     p) PORT="$OPTARG";;
     P) PACKET_MODE=true;;
+    R) RATE_MODE=true;;
+    M) MAXRATE_MODE=true;;
     t) MODE="test";;
     v) echo "$ver_txt"; exit 0;;
     V) VERBOSE=true;;
@@ -76,7 +80,7 @@ done
 
 # functions
 request_header () {
-echo "POST /upnp/control/$4 HTTP/1.0
+echo "POST /igdupnp/control/$4 HTTP/1.0
 HOST: $1:$2
 CONTENT-LENGTH: $3
 CONTENT-TYPE: text/xml; charset=\"utf-8\"
@@ -182,9 +186,15 @@ if [ $? -eq 0 ]; then
 fi
 
 # get data in/out
-if ${PACKET_MODE:-false}; then
+if ${MAXRATE_MODE:-false}; then
+  b1="`ws_operation GetCommonLinkProperties NewLayer1DownstreamMaxBitRate`"
+  b2="`ws_operation GetCommonLinkProperties NewLayer1UpstreamMaxBitRate`"
+elif ${PACKET_MODE:-false}; then
   b1="`ws_operation GetTotalPacketsReceived NewTotalPacketsReceived`"
   b2="`ws_operation GetTotalPacketsSent NewTotalPacketsSent`"
+elif ${RATE_MODE:-false}; then
+  b1="`ws_operation GetAddonInfos NewByteSendRate`"
+  b2="`ws_operation GetAddonInfos NewByteReceiveRate`"
 else
   b1="`ws_operation GetAddonInfos NewTotalBytesReceived`"
   b2="`ws_operation GetAddonInfos NewTotalBytesSent`"
