@@ -189,10 +189,10 @@ fi
 if ${MAXRATE_MODE:-false}; then
   b1="`ws_operation GetCommonLinkProperties NewLayer1DownstreamMaxBitRate`"
   b2="`ws_operation GetCommonLinkProperties NewLayer1UpstreamMaxBitRate`"
-else if ${PACKET_MODE:-false}; then
+elif ${PACKET_MODE:-false}; then
   b1="`ws_operation GetTotalPacketsReceived NewTotalPacketsReceived`"
   b2="`ws_operation GetTotalPacketsSent NewTotalPacketsSent`"
-else if ${RATE_MODE:-false}; then
+elif ${RATE_MODE:-false}; then
   b1="`ws_operation GetAddonInfos NewByteSendRate`"
   b2="`ws_operation GetAddonInfos NewByteReceiveRate`"
 else
