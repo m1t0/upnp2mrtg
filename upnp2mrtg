@@ -61,7 +61,7 @@ Usage: upnp2mrtg [-a <host>] [-p <port>] [-P] [-R] [-M] [-d] [-h] [-i] [-t] [-v]
   -V           be verbose for testing
 "
 
-while getopts "a:dhi:p:PtvV" option; do
+while getopts "a:dhi:p:PRMtvV" option; do
   case $option in
     a) HOST="$OPTARG";;
     d) set -x ;;
@@ -80,7 +80,7 @@ done
 
 # functions
 request_header () {
-echo "POST /upnp/control/$4 HTTP/1.0
+echo "POST /igdupnp/control/$4 HTTP/1.0
 HOST: $1:$2
 CONTENT-LENGTH: $3
 CONTENT-TYPE: text/xml; charset=\"utf-8\"
